@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>桃園市消費諮詢商品類型分析｜互動 BI</title>
+<meta name="description" content="分析桃園市政府消費諮詢商品類型統計，觀察年度變化、商品類型排名與占比。">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--ink:#202b3c;--muted:#68758a;--paper:#f4f6fa;--card:#fff;--line:#e5eaf2;--accent:#4568dc;--accent2:#22a699;--warm:#f2a65a}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;line-height:1.55}
+.wrap{max-width:1240px;margin:auto;padding:24px 20px 40px}.hero{background:linear-gradient(125deg,#263b70,#4568dc);color:white;border-radius:22px;padding:28px 30px;margin-bottom:20px;box-shadow:0 12px 30px #263b701c}
+.eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;opacity:.8}.hero h1{font-size:clamp(1.6rem,3vw,2.45rem);margin:8px 0}.hero p{margin:0;max-width:800px;color:#edf1ff}
+.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;background:var(--card);padding:18px;border:1px solid var(--line);border-radius:18px;margin-bottom:18px}
+label{display:block;font-size:.88rem;color:var(--muted);margin-bottom:6px;font-weight:650}select{width:100%;padding:11px 12px;border:1px solid #d8dfeb;border-radius:10px;background:#fff;color:var(--ink);font:inherit}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0;box-shadow:0 4px 16px #263b7008}
+.kpi-label{color:var(--muted);font-size:.88rem}.kpi-value{font-size:clamp(1.35rem,2.4vw,2rem);font-weight:800;margin-top:6px;overflow-wrap:anywhere}.kpi-note{color:var(--muted);font-size:.8rem;margin-top:4px}
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:16px}.chart-card h2,.insights h2,.method h2{font-size:1.05rem;margin:0 0 3px}.sub{font-size:.83rem;color:var(--muted);margin:0 0 14px}.chart-box{height:320px;position:relative}.chart-box.short{height:300px}
+.insights{margin-bottom:16px}.insight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.insight{background:#f7f9ff;border:1px solid #e5ebff;border-radius:13px;padding:14px}.insight strong{display:block;margin-bottom:5px}.insight p{margin:0;color:#56637a;font-size:.91rem}
+.method details{margin-top:10px}.method summary{cursor:pointer;font-weight:700}.method p,.method li{color:#56637a;font-size:.9rem}.footer{font-size:.82rem;color:var(--muted);padding:14px 2px 0}.status{font-size:.8rem;color:var(--muted);margin-top:8px}
+@media(max-width:800px){.wrap{padding:14px 12px 28px}.hero{padding:22px 20px;border-radius:16px}.filters{grid-template-columns:1fr;padding:14px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:14px}.grid{grid-template-columns:1fr}.chart-box{height:290px}.insight-grid{grid-template-columns:1fr}.kpi-value{font-size:1.5rem}}
+@media(max-width:360px){.kpis{grid-template-columns:1fr}.chart-box{height:260px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">Public Data · Business Intelligence</div>
+  <h1>桃園市消費諮詢商品類型分析</h1>
+  <p>以民國 109–114 年統計資料，觀察消費諮詢案件的年度變化、商品類型排名與各類型占比。可使用下方篩選器切換年度及商品類型。</p>
+</header>
+
+<section class="filters" aria-label="資料篩選">
+  <div><label for="yearFilter">分析年度</label><select id="yearFilter" aria-label="選擇分析年度"></select></div>
+  <div><label for="categoryFilter">趨勢分析商品類型</label><select id="categoryFilter" aria-label="選擇商品類型"></select></div>
+  <div><label for="topFilter">排名圖顯示類別數</label><select id="topFilter"><option value="10">前 10 名</option><option value="15">前 15 名</option><option value="25">全部類別</option></select></div>
+</section>
+
+<section class="kpis">
+  <article class="card"><div class="kpi-label">所選年度諮詢總件數</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-note">單位：件</div></article>
+  <article class="card"><div class="kpi-label">件數最多的商品類型</div><div class="kpi-value" id="kpiTop">—</div><div class="kpi-note" id="kpiTopNote">依所選年度計算</div></article>
+  <article class="card"><div class="kpi-label">所選類型跨年累計</div><div class="kpi-value" id="kpiCategoryTotal">—</div><div class="kpi-note" id="kpiCategoryNote">依所選商品類型計算</div></article>
+  <article class="card"><div class="kpi-label">相較前一年總件數</div><div class="kpi-value" id="kpiChange">—</div><div class="kpi-note" id="kpiChangeNote">年度總件數年增率</div></article>
+</section>
+
+<section class="grid">
+  <article class="card chart-card"><h2>商品類型年度趨勢</h2><p class="sub">切換商品類型，觀察 109–114 年的件數變化。</p><div class="chart-box"><canvas id="trendChart" aria-label="商品類型年度趨勢圖"></canvas></div></article>
+  <article class="card chart-card"><h2>所選年度商品類型排名</h2><p class="sub">依諮詢件數由高至低排序；可切換顯示前幾名。</p><div class="chart-box"><canvas id="rankChart" aria-label="商品類型排名圖"></canvas></div></article>
+</section>
+
+<section class="card chart-card" style="margin-bottom:16px"><h2>所選年度商品類型占比</h2><p class="sub">顯示所選年度各商品類型占總諮詢件數的比例。</p><div class="chart-box short"><canvas id="shareChart" aria-label="商品類型占比圖"></canvas></div></section>
+
+<section class="card insights" style="margin-bottom:16px">
+  <h2>數據洞察</h2><p class="sub">下列文字會依據目前選取的年度與商品類型自動更新。</p>
+  <div class="insight-grid">
+    <div class="insight"><strong>年度變化</strong><p id="insightYear">—</p></div>
+    <div class="insight"><strong>類型集中度</strong><p id="insightConcentration">—</p></div>
+    <div class="insight"><strong>所選類型趨勢</strong><p id="insightCategory">—</p></div>
+  </div>
+</section>
+
+<section class="card method">
+  <h2>資料來源與方法</h2>
+  <div id="sourceInfo">
+    <p><strong>資料來源：</strong>使用者提供之「桃園市政府消費諮詢商品類型分析表（109-114年）」CSV 原始檔。提交前請補上該資料在政府資料開放平臺或桃園市政府的原始資料頁面網址。</p>
+    <p><strong>資料期間：</strong>民國 109–114 年（西元 2020–2025 年）。</p>
+    <p><strong>指標定義：</strong>「諮詢件數」為原始資料各商品類型所列數值；占比＝該類型件數 ÷ 該年度合計 × 100%。年增率＝（本年度合計－前一年度合計）÷ 前一年度合計 × 100%。</p>
+    <p><strong>資料限制：</strong>本分析僅反映桃園市消費諮詢資料中的商品類型件數，不代表所有消費交易、實際損失金額或全台消費者狀況。資料只有六個年度，趨勢解讀需審慎；件數變化不應直接推論為商品品質或消費風險變化。</p>
+  </div>
+  <details><summary>ETL 與資料驗證</summary>
+    <ul>
+      <li>保留原始 CSV，使用 Python 將寬表轉換為長表，方便依年度與商品類型互動分析。</li>
+      <li>將民國年轉換為西元年，統一欄位型態，計算各類型年度占比。</li>
+      <li>檢查年度是否重複、數值是否缺漏或為負數，並核對各商品類型加總是否等於原始「合計」。</li>
+      <li>驗證報告另存於 data/processed/validation_report.csv。</li>
+    </ul>
+  </details>
+  <div class="status" id="loadStatus">正在載入整理後資料……</div>
+</section>
+<footer class="footer">互動 BI 示範｜桃園市消費諮詢商品類型分析｜建議以電腦或手機瀏覽，篩選器會同步更新指標與圖表。</footer>
+</div>
+
+<script>
+const embeddedData = [{"民國年": 109, "西元年": 2020, "商品類型": "其他", "諮詢件數": 1192, "年度總件數": 3950, "年度占比": 30.1772}, {"民國年": 109, "西元年": 2020, "商品類型": "房屋", "諮詢件數": 670, "年度總件數": 3950, "年度占比": 16.962}, {"民國年": 109, "西元年": 2020, "商品類型": "車輛", "諮詢件數": 377, "年度總件數": 3950, "年度占比": 9.5443}, {"民國年": 109, "西元年": 2020, "商品類型": "醫療器材", "諮詢件數": 321, "年度總件數": 3950, "年度占比": 8.1266}, {"民國年": 109, "西元年": 2020, "商品類型": "電器及周邊產品", "諮詢件數": 286, "年度總件數": 3950, "年度占比": 7.2405}, {"民國年": 109, "西元年": 2020, "商品類型": "服飾皮件及鞋類", "諮詢件數": 209, "年度總件數": 3950, "年度占比": 5.2911}, {"民國年": 109, "西元年": 2020, "商品類型": "通訊及周邊產品", "諮詢件數": 171, "年度總件數": 3950, "年度占比": 4.3291}, {"民國年": 109, "西元年": 2020, "商品類型": "食品", "諮詢件數": 137, "年度總件數": 3950, "年度占比": 3.4684}, {"民國年": 109, "西元年": 2020, "商品類型": "化粧品", "諮詢件數": 134, "年度總件數": 3950, "年度占比": 3.3924}, {"民國年": 109, "西元年": 2020, "商品類型": "家飾用品及家具廚具", "諮詢件數": 66, "年度總件數": 3950, "年度占比": 1.6709}, {"民國年": 109, "西元年": 2020, "商品類型": "禮券", "諮詢件數": 57, "年度總件數": 3950, "年度占比": 1.443}, {"民國年": 109, "西元年": 2020, "商品類型": "電腦及周邊產品", "諮詢件數": 55, "年度總件數": 3950, "年度占比": 1.3924}, {"民國年": 109, "西元年": 2020, "商品類型": "玩具及遊戲軟體", "諮詢件數": 47, "年度總件數": 3950, "年度占比": 1.1899}, {"民國年": 109, "西元年": 2020, "商品類型": "藥品", "諮詢件數": 46, "年度總件數": 3950, "年度占比": 1.1646}, {"民國年": 109, "西元年": 2020, "商品類型": "能源產品", "諮詢件數": 40, "年度總件數": 3950, "年度占比": 1.0127}, {"民國年": 109, "西元年": 2020, "商品類型": "文教用品", "諮詢件數": 38, "年度總件數": 3950, "年度占比": 0.962}, {"民國年": 109, "西元年": 2020, "商品類型": "運動健身器材", "諮詢件數": 27, "年度總件數": 3950, "年度占比": 0.6835}, {"民國年": 109, "西元年": 2020, "商品類型": "健康食品", "諮詢件數": 23, "年度總件數": 3950, "年度占比": 0.5823}, {"民國年": 109, "西元年": 2020, "商品類型": "菸酒", "諮詢件數": 19, "年度總件數": 3950, "年度占比": 0.481}, {"民國年": 109, "西元年": 2020, "商品類型": "出版品", "諮詢件數": 11, "年度總件數": 3950, "年度占比": 0.2785}, {"民國年": 109, "西元年": 2020, "商品類型": "攝影機及周邊產品", "諮詢件數": 6, "年度總件數": 3950, "年度占比": 0.1519}, {"民國年": 109, "西元年": 2020, "商品類型": "飲用水", "諮詢件數": 5, "年度總件數": 3950, "年度占比": 0.1266}, {"民國年": 109, "西元年": 2020, "商品類型": "相機及周邊產品", "諮詢件數": 5, "年度總件數": 3950, "年度占比": 0.1266}, {"民國年": 109, "西元年": 2020, "商品類型": "殯葬設施", "諮詢件數": 5, "年度總件數": 3950, "年度占比": 0.1266}, {"民國年": 109, "西元年": 2020, "商品類型": "農產品", "諮詢件數": 3, "年度總件數": 3950, "年度占比": 0.0759}, {"民國年": 110, "西元年": 2021, "商品類型": "其他", "諮詢件數": 1014, "年度總件數": 3970, "年度占比": 25.5416}, {"民國年": 110, "西元年": 2021, "商品類型": "房屋", "諮詢件數": 719, "年度總件數": 3970, "年度占比": 18.1108}, {"民國年": 110, "西元年": 2021, "商品類型": "車輛", "諮詢件數": 387, "年度總件數": 3970, "年度占比": 9.7481}, {"民國年": 110, "西元年": 2021, "商品類型": "服飾皮件及鞋類", "諮詢件數": 294, "年度總件數": 3970, "年度占比": 7.4055}, {"民國年": 110, "西元年": 2021, "商品類型": "電器及周邊產品", "諮詢件數": 271, "年度總件數": 3970, "年度占比": 6.8262}, {"民國年": 110, "西元年": 2021, "商品類型": "食品", "諮詢件數": 246, "年度總件數": 3970, "年度占比": 6.1965}, {"民國年": 110, "西元年": 2021, "商品類型": "通訊及周邊產品", "諮詢件數": 191, "年度總件數": 3970, "年度占比": 4.8111}, {"民國年": 110, "西元年": 2021, "商品類型": "家飾用品及家具廚具", "諮詢件數": 150, "年度總件數": 3970, "年度占比": 3.7783}, {"民國年": 110, "西元年": 2021, "商品類型": "化粧品", "諮詢件數": 100, "年度總件數": 3970, "年度占比": 2.5189}, {"民國年": 110, "西元年": 2021, "商品類型": "醫療器材", "諮詢件數": 96, "年度總件數": 3970, "年度占比": 2.4181}, {"民國年": 110, "西元年": 2021, "商品類型": "電腦及周邊產品", "諮詢件數": 74, "年度總件數": 3970, "年度占比": 1.864}, {"民國年": 110, "西元年": 2021, "商品類型": "禮券", "諮詢件數": 72, "年度總件數": 3970, "年度占比": 1.8136}, {"民國年": 110, "西元年": 2021, "商品類型": "健康食品", "諮詢件數": 62, "年度總件數": 3970, "年度占比": 1.5617}, {"民國年": 110, "西元年": 2021, "商品類型": "玩具及遊戲軟體", "諮詢件數": 57, "年度總件數": 3970, "年度占比": 1.4358}, {"民國年": 110, "西元年": 2021, "商品類型": "能源產品", "諮詢件數": 39, "年度總件數": 3970, "年度占比": 0.9824}, {"民國年": 110, "西元年": 2021, "商品類型": "文教用品", "諮詢件數": 38, "年度總件數": 3970, "年度占比": 0.9572}, {"民國年": 110, "西元年": 2021, "商品類型": "藥品", "諮詢件數": 36, "年度總件數": 3970, "年度占比": 0.9068}, {"民國年": 110, "西元年": 2021, "商品類型": "運動健身器材", "諮詢件數": 34, "年度總件數": 3970, "年度占比": 0.8564}, {"民國年": 110, "西元年": 2021, "商品類型": "菸酒", "諮詢件數": 27, "年度總件數": 3970, "年度占比": 0.6801}, {"民國年": 110, "西元年": 2021, "商品類型": "出版品", "諮詢件數": 23, "年度總件數": 3970, "年度占比": 0.5793}, {"民國年": 110, "西元年": 2021, "商品類型": "農產品", "諮詢件數": 11, "年度總件數": 3970, "年度占比": 0.2771}, {"民國年": 110, "西元年": 2021, "商品類型": "殯葬設施", "諮詢件數": 10, "年度總件數": 3970, "年度占比": 0.2519}, {"民國年": 110, "西元年": 2021, "商品類型": "攝影機及周邊產品", "諮詢件數": 9, "年度總件數": 3970, "年度占比": 0.2267}, {"民國年": 110, "西元年": 2021, "商品類型": "相機及周邊產品", "諮詢件數": 6, "年度總件數": 3970, "年度占比": 0.1511}, {"民國年": 110, "西元年": 2021, "商品類型": "飲用水", "諮詢件數": 4, "年度總件數": 3970, "年度占比": 0.1008}, {"民國年": 111, "西元年": 2022, "商品類型": "其他", "諮詢件數": 903, "年度總件數": 3445, "年度占比": 26.2119}, {"民國年": 111, "西元年": 2022, "商品類型": "房屋", "諮詢件數": 718, "年度總件數": 3445, "年度占比": 20.8418}, {"民國年": 111, "西元年": 2022, "商品類型": "車輛", "諮詢件數": 376, "年度總件數": 3445, "年度占比": 10.9144}, {"民國年": 111, "西元年": 2022, "商品類型": "電器及周邊產品", "諮詢件數": 306, "年度總件數": 3445, "年度占比": 8.8824}, {"民國年": 111, "西元年": 2022, "商品類型": "服飾皮件及鞋類", "諮詢件數": 207, "年度總件數": 3445, "年度占比": 6.0087}, {"民國年": 111, "西元年": 2022, "商品類型": "食品", "諮詢件數": 166, "年度總件數": 3445, "年度占比": 4.8186}, {"民國年": 111, "西元年": 2022, "商品類型": "通訊及周邊產品", "諮詢件數": 136, "年度總件數": 3445, "年度占比": 3.9478}, {"民國年": 111, "西元年": 2022, "商品類型": "家飾用品及家具廚具", "諮詢件數": 134, "年度總件數": 3445, "年度占比": 3.8897}, {"民國年": 111, "西元年": 2022, "商品類型": "化粧品", "諮詢件數": 83, "年度總件數": 3445, "年度占比": 2.4093}, {"民國年": 111, "西元年": 2022, "商品類型": "電腦及周邊產品", "諮詢件數": 71, "年度總件數": 3445, "年度占比": 2.061}, {"民國年": 111, "西元年": 2022, "商品類型": "禮券", "諮詢件數": 63, "年度總件數": 3445, "年度占比": 1.8287}, {"民國年": 111, "西元年": 2022, "商品類型": "玩具及遊戲軟體", "諮詢件數": 47, "年度總件數": 3445, "年度占比": 1.3643}, {"民國年": 111, "西元年": 2022, "商品類型": "健康食品", "諮詢件數": 39, "年度總件數": 3445, "年度占比": 1.1321}, {"民國年": 111, "西元年": 2022, "商品類型": "醫療器材", "諮詢件數": 36, "年度總件數": 3445, "年度占比": 1.045}, {"民國年": 111, "西元年": 2022, "商品類型": "藥品", "諮詢件數": 26, "年度總件數": 3445, "年度占比": 0.7547}, {"民國年": 111, "西元年": 2022, "商品類型": "能源產品", "諮詢件數": 25, "年度總件數": 3445, "年度占比": 0.7257}, {"民國年": 111, "西元年": 2022, "商品類型": "文教用品", "諮詢件數": 24, "年度總件數": 3445, "年度占比": 0.6967}, {"民國年": 111, "西元年": 2022, "商品類型": "運動健身器材", "諮詢件數": 23, "年度總件數": 3445, "年度占比": 0.6676}, {"民國年": 111, "西元年": 2022, "商品類型": "出版品", "諮詢件數": 15, "年度總件數": 3445, "年度占比": 0.4354}, {"民國年": 111, "西元年": 2022, "商品類型": "菸酒", "諮詢件數": 12, "年度總件數": 3445, "年度占比": 0.3483}, {"民國年": 111, "西元年": 2022, "商品類型": "攝影機及周邊產品", "諮詢件數": 10, "年度總件數": 3445, "年度占比": 0.2903}, {"民國年": 111, "西元年": 2022, "商品類型": "飲用水", "諮詢件數": 9, "年度總件數": 3445, "年度占比": 0.2612}, {"民國年": 111, "西元年": 2022, "商品類型": "殯葬設施", "諮詢件數": 7, "年度總件數": 3445, "年度占比": 0.2032}, {"民國年": 111, "西元年": 2022, "商品類型": "農產品", "諮詢件數": 5, "年度總件數": 3445, "年度占比": 0.1451}, {"民國年": 111, "西元年": 2022, "商品類型": "相機及周邊產品", "諮詢件數": 4, "年度總件數": 3445, "年度占比": 0.1161}, {"民國年": 112, "西元年": 2023, "商品類型": "其他", "諮詢件數": 821, "年度總件數": 3679, "年度占比": 22.3158}, {"民國年": 112, "西元年": 2023, "商品類型": "房屋", "諮詢件數": 765, "年度總件數": 3679, "年度占比": 20.7937}, {"民國年": 112, "西元年": 2023, "商品類型": "車輛", "諮詢件數": 492, "年度總件數": 3679, "年度占比": 13.3732}, {"民國年": 112, "西元年": 2023, "商品類型": "電器及周邊產品", "諮詢件數": 298, "年度總件數": 3679, "年度占比": 8.1}, {"民國年": 112, "西元年": 2023, "商品類型": "食品", "諮詢件數": 283, "年度總件數": 3679, "年度占比": 7.6923}, {"民國年": 112, "西元年": 2023, "商品類型": "服飾皮件及鞋類", "諮詢件數": 226, "年度總件數": 3679, "年度占比": 6.143}, {"民國年": 112, "西元年": 2023, "商品類型": "家飾用品及家具廚具", "諮詢件數": 146, "年度總件數": 3679, "年度占比": 3.9685}, {"民國年": 112, "西元年": 2023, "商品類型": "通訊及周邊產品", "諮詢件數": 128, "年度總件數": 3679, "年度占比": 3.4792}, {"民國年": 112, "西元年": 2023, "商品類型": "化粧品", "諮詢件數": 86, "年度總件數": 3679, "年度占比": 2.3376}, {"民國年": 112, "西元年": 2023, "商品類型": "禮券", "諮詢件數": 65, "年度總件數": 3679, "年度占比": 1.7668}, {"民國年": 112, "西元年": 2023, "商品類型": "健康食品", "諮詢件數": 56, "年度總件數": 3679, "年度占比": 1.5222}, {"民國年": 112, "西元年": 2023, "商品類型": "電腦及周邊產品", "諮詢件數": 49, "年度總件數": 3679, "年度占比": 1.3319}, {"民國年": 112, "西元年": 2023, "商品類型": "玩具及遊戲軟體", "諮詢件數": 43, "年度總件數": 3679, "年度占比": 1.1688}, {"民國年": 112, "西元年": 2023, "商品類型": "文教用品", "諮詢件數": 41, "年度總件數": 3679, "年度占比": 1.1144}, {"民國年": 112, "西元年": 2023, "商品類型": "醫療器材", "諮詢件數": 39, "年度總件數": 3679, "年度占比": 1.0601}, {"民國年": 112, "西元年": 2023, "商品類型": "能源產品", "諮詢件數": 34, "年度總件數": 3679, "年度占比": 0.9242}, {"民國年": 112, "西元年": 2023, "商品類型": "藥品", "諮詢件數": 29, "年度總件數": 3679, "年度占比": 0.7883}, {"民國年": 112, "西元年": 2023, "商品類型": "出版品", "諮詢件數": 19, "年度總件數": 3679, "年度占比": 0.5164}, {"民國年": 112, "西元年": 2023, "商品類型": "運動健身器材", "諮詢件數": 13, "年度總件數": 3679, "年度占比": 0.3534}, {"民國年": 112, "西元年": 2023, "商品類型": "農產品", "諮詢件數": 10, "年度總件數": 3679, "年度占比": 0.2718}, {"民國年": 112, "西元年": 2023, "商品類型": "殯葬設施", "諮詢件數": 10, "年度總件數": 3679, "年度占比": 0.2718}, {"民國年": 112, "西元年": 2023, "商品類型": "菸酒", "諮詢件數": 9, "年度總件數": 3679, "年度占比": 0.2446}, {"民國年": 112, "西元年": 2023, "商品類型": "攝影機及周邊產品", "諮詢件數": 8, "年度總件數": 3679, "年度占比": 0.2175}, {"民國年": 112, "西元年": 2023, "商品類型": "相機及周邊產品", "諮詢件數": 5, "年度總件數": 3679, "年度占比": 0.1359}, {"民國年": 112, "西元年": 2023, "商品類型": "飲用水", "諮詢件數": 4, "年度總件數": 3679, "年度占比": 0.1087}, {"民國年": 113, "西元年": 2024, "商品類型": "房屋", "諮詢件數": 879, "年度總件數": 3381, "年度占比": 25.9982}, {"民國年": 113, "西元年": 2024, "商品類型": "其他", "諮詢件數": 488, "年度總件數": 3381, "年度占比": 14.4336}, {"民國年": 113, "西元年": 2024, "商品類型": "車輛", "諮詢件數": 409, "年度總件數": 3381, "年度占比": 12.097}, {"民國年": 113, "西元年": 2024, "商品類型": "電器及周邊產品", "諮詢件數": 313, "年度總件數": 3381, "年度占比": 9.2576}, {"民國年": 113, "西元年": 2024, "商品類型": "服飾皮件及鞋類", "諮詢件數": 264, "年度總件數": 3381, "年度占比": 7.8083}, {"民國年": 113, "西元年": 2024, "商品類型": "食品", "諮詢件數": 224, "年度總件數": 3381, "年度占比": 6.6253}, {"民國年": 113, "西元年": 2024, "商品類型": "家飾用品及家具廚具", "諮詢件數": 170, "年度總件數": 3381, "年度占比": 5.0281}, {"民國年": 113, "西元年": 2024, "商品類型": "通訊及周邊產品", "諮詢件數": 132, "年度總件數": 3381, "年度占比": 3.9042}, {"民國年": 113, "西元年": 2024, "商品類型": "化粧品", "諮詢件數": 78, "年度總件數": 3381, "年度占比": 2.307}, {"民國年": 113, "西元年": 2024, "商品類型": "電腦及周邊產品", "諮詢件數": 61, "年度總件數": 3381, "年度占比": 1.8042}, {"民國年": 113, "西元年": 2024, "商品類型": "能源產品", "諮詢件數": 58, "年度總件數": 3381, "年度占比": 1.7155}, {"民國年": 113, "西元年": 2024, "商品類型": "健康食品", "諮詢件數": 46, "年度總件數": 3381, "年度占比": 1.3605}, {"民國年": 113, "西元年": 2024, "商品類型": "玩具及遊戲軟體", "諮詢件數": 44, "年度總件數": 3381, "年度占比": 1.3014}, {"民國年": 113, "西元年": 2024, "商品類型": "文教用品", "諮詢件數": 39, "年度總件數": 3381, "年度占比": 1.1535}, {"民國年": 113, "西元年": 2024, "商品類型": "藥品", "諮詢件數": 36, "年度總件數": 3381, "年度占比": 1.0648}, {"民國年": 113, "西元年": 2024, "商品類型": "醫療器材", "諮詢件數": 33, "年度總件數": 3381, "年度占比": 0.976}, {"民國年": 113, "西元年": 2024, "商品類型": "禮券", "諮詢件數": 28, "年度總件數": 3381, "年度占比": 0.8282}, {"民國年": 113, "西元年": 2024, "商品類型": "運動健身器材", "諮詢件數": 17, "年度總件數": 3381, "年度占比": 0.5028}, {"民國年": 113, "西元年": 2024, "商品類型": "出版品", "諮詢件數": 14, "年度總件數": 3381, "年度占比": 0.4141}, {"民國年": 113, "西元年": 2024, "商品類型": "攝影機及周邊產品", "諮詢件數": 12, "年度總件數": 3381, "年度占比": 0.3549}, {"民國年": 113, "西元年": 2024, "商品類型": "農產品", "諮詢件數": 9, "年度總件數": 3381, "年度占比": 0.2662}, {"民國年": 113, "西元年": 2024, "商品類型": "相機及周邊產品", "諮詢件數": 9, "年度總件數": 3381, "年度占比": 0.2662}, {"民國年": 113, "西元年": 2024, "商品類型": "殯葬設施", "諮詢件數": 7, "年度總件數": 3381, "年度占比": 0.207}, {"民國年": 113, "西元年": 2024, "商品類型": "菸酒", "諮詢件數": 6, "年度總件數": 3381, "年度占比": 0.1775}, {"民國年": 113, "西元年": 2024, "商品類型": "飲用水", "諮詢件數": 5, "年度總件數": 3381, "年度占比": 0.1479}, {"民國年": 114, "西元年": 2025, "商品類型": "房屋", "諮詢件數": 766, "年度總件數": 3016, "年度占比": 25.3979}, {"民國年": 114, "西元年": 2025, "商品類型": "其他", "諮詢件數": 512, "年度總件數": 3016, "年度占比": 16.9761}, {"民國年": 114, "西元年": 2025, "商品類型": "車輛", "諮詢件數": 376, "年度總件數": 3016, "年度占比": 12.4668}, {"民國年": 114, "西元年": 2025, "商品類型": "電器及周邊產品", "諮詢件數": 270, "年度總件數": 3016, "年度占比": 8.9523}, {"民國年": 114, "西元年": 2025, "商品類型": "服飾皮件及鞋類", "諮詢件數": 229, "年度總件數": 3016, "年度占比": 7.5928}, {"民國年": 114, "西元年": 2025, "商品類型": "食品", "諮詢件數": 170, "年度總件數": 3016, "年度占比": 5.6366}, {"民國年": 114, "西元年": 2025, "商品類型": "家飾用品及家具廚具", "諮詢件數": 162, "年度總件數": 3016, "年度占比": 5.3714}, {"民國年": 114, "西元年": 2025, "商品類型": "通訊及周邊產品", "諮詢件數": 85, "年度總件數": 3016, "年度占比": 2.8183}, {"民國年": 114, "西元年": 2025, "商品類型": "化粧品", "諮詢件數": 62, "年度總件數": 3016, "年度占比": 2.0557}, {"民國年": 114, "西元年": 2025, "商品類型": "電腦及周邊產品", "諮詢件數": 60, "年度總件數": 3016, "年度占比": 1.9894}, {"民國年": 114, "西元年": 2025, "商品類型": "能源產品", "諮詢件數": 51, "年度總件數": 3016, "年度占比": 1.691}, {"民國年": 114, "西元年": 2025, "商品類型": "文教用品", "諮詢件數": 41, "年度總件數": 3016, "年度占比": 1.3594}, {"民國年": 114, "西元年": 2025, "商品類型": "健康食品", "諮詢件數": 40, "年度總件數": 3016, "年度占比": 1.3263}, {"民國年": 114, "西元年": 2025, "商品類型": "禮券", "諮詢件數": 38, "年度總件數": 3016, "年度占比": 1.2599}, {"民國年": 114, "西元年": 2025, "商品類型": "玩具及遊戲軟體", "諮詢件數": 37, "年度總件數": 3016, "年度占比": 1.2268}, {"民國年": 114, "西元年": 2025, "商品類型": "醫療器材", "諮詢件數": 30, "年度總件數": 3016, "年度占比": 0.9947}, {"民國年": 114, "西元年": 2025, "商品類型": "藥品", "諮詢件數": 28, "年度總件數": 3016, "年度占比": 0.9284}, {"民國年": 114, "西元年": 2025, "商品類型": "運動健身器材", "諮詢件數": 14, "年度總件數": 3016, "年度占比": 0.4642}, {"民國年": 114, "西元年": 2025, "商品類型": "出版品", "諮詢件數": 14, "年度總件數": 3016, "年度占比": 0.4642}, {"民國年": 114, "西元年": 2025, "商品類型": "農產品", "諮詢件數": 7, "年度總件數": 3016, "年度占比": 0.2321}, {"民國年": 114, "西元年": 2025, "商品類型": "菸酒", "諮詢件數": 6, "年度總件數": 3016, "年度占比": 0.1989}, {"民國年": 114, "西元年": 2025, "商品類型": "相機及周邊產品", "諮詢件數": 5, "年度總件數": 3016, "年度占比": 0.1658}, {"民國年": 114, "西元年": 2025, "商品類型": "殯葬設施", "諮詢件數": 5, "年度總件數": 3016, "年度占比": 0.1658}, {"民國年": 114, "西元年": 2025, "商品類型": "飲用水", "諮詢件數": 4, "年度總件數": 3016, "年度占比": 0.1326}, {"民國年": 114, "西元年": 2025, "商品類型": "攝影機及周邊產品", "諮詢件數": 4, "年度總件數": 3016, "年度占比": 0.1326}];
+let rows = [];
+let trendChart, rankChart, shareChart;
+const fmt = n => Number(n).toLocaleString("zh-TW");
+const pct = n => (n >= 0 ? "+" : "") + n.toFixed(1) + "%";
+const years = () => [...new Set(rows.map(r => Number(r.西元年)))].sort((a,b)=>a-b);
+const categories = () => [...new Set(rows.map(r => r.商品類型))];
+const rowsForYear = y => rows.filter(r => Number(r.西元年) === Number(y));
+const rowFor = (y,c) => rows.find(r => Number(r.西元年) === Number(y) && r.商品類型 === c);
+function initFilters(){
+  const yf=document.getElementById("yearFilter"), cf=document.getElementById("categoryFilter");
+  yf.innerHTML=years().map(y=>`<option value="${y}">${y} 年（民國 ${y-1911} 年）</option>`).join("");
+  yf.value=String(Math.max(...years()));
+  cf.innerHTML=categories().sort((a,b)=>a.localeCompare(b,"zh-Hant")).map(c=>`<option value="${c}">${c}</option>`).join("");
+  cf.value="房屋";
+  ["yearFilter","categoryFilter","topFilter"].forEach(id=>document.getElementById(id).addEventListener("change",render));
+}
+function chartDefaults(){
+  Chart.defaults.font.family='system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif';
+  Chart.defaults.color="#68758a";
+}
+function createCharts(){
+  chartDefaults();
+  trendChart=new Chart(document.getElementById("trendChart"),{type:"line",data:{labels:[],datasets:[{label:"諮詢件數（件）",data:[],borderColor:"#4568dc",backgroundColor:"#4568dc22",fill:true,tension:.25,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true}},scales:{x:{title:{display:true,text:"西元年度"}},y:{beginAtZero:true,title:{display:true,text:"諮詢件數（件）"},ticks:{callback:v=>fmt(v)}}}}});
+  rankChart=new Chart(document.getElementById("rankChart"),{type:"bar",data:{labels:[],datasets:[{label:"諮詢件數（件）",data:[],backgroundColor:"#22a699"}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,title:{display:true,text:"諮詢件數（件）"},ticks:{callback:v=>fmt(v)}},y:{ticks:{autoSkip:false}}}}});
+  shareChart=new Chart(document.getElementById("shareChart"),{type:"doughnut",data:{labels:[],datasets:[{label:"占比（%）",data:[],backgroundColor:["#4568dc","#22a699","#f2a65a","#8b72c7","#e4778a","#6b9ac4","#8fb996","#d4b483","#8491a3","#d18b5b","#5c8d89","#b5a1d6","#d9a5b3","#a9b7c6","#a6c48a","#e6c86e","#7f9cf5","#f0a6ca","#80cbc4","#b39ddb","#ffcc80","#90caf9","#c5e1a5","#bcaaa4","#ef9a9a","#b0bec5"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${Number(ctx.raw).toFixed(1)}%`}}}}});
+}
+function render(){
+  const y=Number(document.getElementById("yearFilter").value);
+  const cat=document.getElementById("categoryFilter").value;
+  const limit=Number(document.getElementById("topFilter").value);
+  const yr=rowsForYear(y).sort((a,b)=>Number(b.諮詢件數)-Number(a.諮詢件數));
+  const total=yr.length?Number(yr[0].年度總件數):0;
+  const top=yr[0];
+  const catTotal=rows.filter(r=>r.商品類型===cat).reduce((s,r)=>s+Number(r.諮詢件數),0);
+  const previous=rowsForYear(y-1);
+  const prevTotal=previous.length?Number(previous[0].年度總件數):null;
+  const change=prevTotal!==null&&prevTotal!==0?(total-prevTotal)/prevTotal*100:null;
+  document.getElementById("kpiTotal").textContent=fmt(total);
+  document.getElementById("kpiTop").textContent=top?top.商品類型:"—";
+  document.getElementById("kpiTopNote").textContent=top?`${fmt(top.諮詢件數)} 件，占 ${Number(top.年度占比).toFixed(1)}%`:"無資料";
+  document.getElementById("kpiCategoryTotal").textContent=fmt(catTotal);
+  document.getElementById("kpiCategoryNote").textContent=`${cat}｜六年合計`;
+  document.getElementById("kpiChange").textContent=change===null?"無前一年資料":pct(change);
+  document.getElementById("kpiChangeNote").textContent=change===null?"無法計算年增率":`前一年 ${fmt(prevTotal)} 件 → 本年 ${fmt(total)} 件`;
+
+  const trend=years().map(yy=>rowFor(yy,cat));
+  trendChart.data.labels=years();
+  trendChart.data.datasets[0].label=`${cat}（件）`;
+  trendChart.data.datasets[0].data=trend.map(r=>r?Number(r.諮詢件數):0);
+  trendChart.update();
+
+  const ranked=yr.slice(0,limit).reverse();
+  rankChart.data.labels=ranked.map(r=>r.商品類型);
+  rankChart.data.datasets[0].data=ranked.map(r=>Number(r.諮詢件數));
+  rankChart.update();
+
+  const share=yr.filter(r=>Number(r.諮詢件數)>0);
+  shareChart.data.labels=share.map(r=>r.商品類型);
+  shareChart.data.datasets[0].data=share.map(r=>Number(r.年度占比));
+  shareChart.update();
+
+  const sortedYears=years(), idx=sortedYears.indexOf(y);
+  const prevY=idx>0?sortedYears[idx-1]:null;
+  const prevYearTotal=prevY?Number(rowsForYear(prevY)[0].年度總件數):null;
+  let yearText=`${y} 年共 ${fmt(total)} 件。`;
+  if(prevYearTotal!==null){
+    const delta=total-prevYearTotal;
+    yearText+=`較 ${prevY} 年${delta>=0?"增加":"減少"} ${fmt(Math.abs(delta))} 件（${pct((delta/prevYearTotal)*100)}）。`;
+  }else yearText+="這是資料期間內最早的年度，沒有前一年可比較。";
+  document.getElementById("insightYear").textContent=yearText;
+  const top3=yr.slice(0,3).reduce((s,r)=>s+Number(r.諮詢件數),0);
+  document.getElementById("insightConcentration").textContent=`前 3 大類型合計 ${fmt(top3)} 件，占年度總件數 ${(top3/total*100).toFixed(1)}%。${top?`最大類型為「${top.商品類型}」。`:""}`;
+  const first=trend[0], last=trend[trend.length-1];
+  let catText=`${cat}在 ${years()[0]} 年為 ${fmt(first?first.諮詢件數:0)} 件，${years()[years().length-1]} 年為 ${fmt(last?last.諮詢件數:0)} 件。`;
+  if(first && last && Number(first.諮詢件數)!==0){
+    const diff=(Number(last.諮詢件數)-Number(first.諮詢件數))/Number(first.諮詢件數)*100;
+    catText+=`期間起訖變化 ${pct(diff)}。`;
+  }
+  document.getElementById("insightCategory").textContent=catText;
+}
+async function start(){
+  try{
+    const response=await fetch("data/processed/taoyuan_consumer_consultation_clean.csv");
+    if(!response.ok) throw new Error("CSV fetch failed");
+    const text=await response.text();
+    const lines=text.replace(/^\uFEFF/,"").trim().split(/\r?\n/);
+    const headers=lines[0].split(",");
+    rows=lines.slice(1).map(line=>{
+      const vals=line.split(",");
+      const obj={}; headers.forEach((h,i)=>obj[h]=vals[i]);
+      ["民國年","西元年","諮詢件數","年度總件數","年度占比"].forEach(k=>obj[k]=Number(obj[k]));
+      return obj;
+    });
+    document.getElementById("loadStatus").textContent="已載入整理後 CSV 資料。";
+  }catch(e){
+    rows=embeddedData;
+    document.getElementById("loadStatus").textContent="目前使用網頁內嵌的整理後資料預覽；發布到 GitHub Pages 後會優先讀取 processed CSV。若 CSV 有更新，請重新執行 ETL 並提交檔案。";
+  }
+  initFilters(); createCharts(); render();
+}
+start();
+</script>
+</body>
+</html>
